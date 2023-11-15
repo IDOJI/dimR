@@ -1,18 +1,14 @@
-# Hello, world!
-#
-# This is an example function named 'hello' 
-# which prints 'Hello, world!'.
-#
-# You can learn more about package authoring with RStudio at:
-#
-#   http://r-pkgs.had.co.nz/
-#
-# Some useful keyboard shortcuts for package authoring:
-#
-#   Install Package:           'Ctrl + Shift + B'
-#   Check Package:             'Ctrl + Shift + E'
-#   Test Package:              'Ctrl + Shift + T'
+# common component analysis
+# @inproceedings{wang2011common,
+#   title={Common component analysis for multiple covariance matrices},
+#   author={Wang, Huahua and Banerjee, Arindam and Boley, Daniel},
+#   booktitle={Proceedings of the 17th ACM SIGKDD international conference on Knowledge discovery and data mining},
+#   pages={956--964},
+#   year={2011}
+# }
+DimMat___Sym__Cov__CCA = function(){
 
-hello <- function() {
-  print("Hello, world!")
+
+
+
 }
