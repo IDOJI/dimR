@@ -1,14 +1,30 @@
-# common component analysis
-# @inproceedings{wang2011common,
-#   title={Common component analysis for multiple covariance matrices},
-#   author={Wang, Huahua and Banerjee, Arindam and Boley, Daniel},
-#   booktitle={Proceedings of the 17th ACM SIGKDD international conference on Knowledge discovery and data mining},
-#   pages={956--964},
-#   year={2011}
-# }
-DimMat___Sym__Cov__CCA = function(){
+DimMat___Sym___Cov___CCA = function(Cov.list, explained_var_prop = 0.9, epsilon = 1e-6, method = c("Algorithm_1", "Algorithm_2")){
+  #=============================================================================
+  # Arguments
+  #=============================================================================
+  # Cov.list : 공분산 행렬들의 리스트, N개의 p * p 행렬
+  # epsilon: 수렴 기준
 
 
 
 
+  #=============================================================================
+  # Algorithm
+  #=============================================================================
+  if(method == "Algorithm_1"){
+
+    Results = DimMat___Sym___Cov___CCA___Algorithm1(Cov.list, explained_var_prop, epsilon)
+
+  }else if(method == "Algorithm_2"){
+
+
+
+  }
+
+
+
+  #=============================================================================
+  # Return
+  #=============================================================================
+  return(Results)
 }
