@@ -3,6 +3,12 @@ DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list, explained_var_prop = 
   # Define functions for the algorithm
   #=============================================================================
   #-------------------------------------
+  # Extracting Upper elements
+  #-------------------------------------
+  uppper_tri = function(mat){
+    mat[upper.tri(mat, diag = FALSE)]
+  }
+  #-------------------------------------
   # Checking identity
   #-------------------------------------
   is.nearly.identity <- function(mat, tolerance = 1e-6) {
@@ -59,7 +65,7 @@ DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list, explained_var_prop = 
   U_k = U_0 <- eigen_decomp$vectors[, 1:r, drop = F]
 
   # check the rank
-  if(diag(t(U_0) %*% U_0) %>% sum != r){
+  if(diag(t(U_0) %*% U_0) %>% sum - r > epsilon){
     stop("The rank is not r!")
   }
 
@@ -158,11 +164,20 @@ DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list, explained_var_prop = 
 
 
 
+  #=============================================================================
+  # Extracting only upper elements
+  #=============================================================================
+  Half_Vectorized = lapply(Y_t.list, uppper_tri) %>% do.call(rbind, .)
+
+
+
+
+
 
   #=============================================================================
   # Return results
   #=============================================================================
-  list(Y_t = Y_t.list, U_k = U_k) %>% return()
+  list(Y_t = Y_t.list, Half_Vectorized = Half_Vectorized, U_k = U_k) %>% return()
 }
 
 
