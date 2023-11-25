@@ -59,7 +59,11 @@ DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list,
 
   # Initialize U_0
   U_k = U_0 <- eigen_decomp$vectors[, 1:r, drop = F]
-  # diag(t(U_0) %*% U_0) %>% sum == r
+
+  # check the rank
+  if(diag(t(U_0) %*% U_0) %>% sum != r){
+    stop("The rank is not r!")
+  }
 
 
   # initialize f_k

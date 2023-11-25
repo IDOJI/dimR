@@ -1,161 +1,40 @@
-DimMat___Sym___Cov___CCA___Algorithm2 = function(Cov.list, explained_var_prop = 0.9, epsilon = 1e-6) {
-  #=============================================================================
-  # Define functions for the algorithm
-  #=============================================================================
-  #-------------------------------------
-  # Checking identity
-  #-------------------------------------
-  is.nearly.identity <- function(mat, tolerance = 1e-6) {
-    # Check dimension of mat
-    if (!is.matrix(mat)) stop("The input is not a matrix.")
-    if (nrow(mat) != ncol(mat)) return(FALSE)
+algorithm_2 <- function(Xs, r, epsilon = 1e-6, max_iter = 100) {
+  n <- nrow(Xs[[1]])
+  U <- qr.Q(qr(matrix(rnorm(n * r), n, r)))  # Random orthonormal initial U
+  Ys <- lapply(Xs, function(X) t(U) %*% X %*% U)  # Initial Ys using U
 
-    # check if the diagonal elements are 1
-    if (any(abs(diag(mat) - 1) > tolerance)) return(FALSE)
+  for (iter in 1:max_iter) {
+    # Compute the matrix for SVD
+    SVD_matrix <- Reduce("+", lapply(seq_along(Xs), function(i) {
+      Ys[[i]] %*% t(U) %*% Xs[[i]]
+    }))
 
-    # Check if the non-diagonal elements are near 0
-    off.diagonal <- mat - diag(diag(mat))
-    if (any(abs(off.diagonal) > tolerance)) return(FALSE)
+    # Perform the SVD on the matrix
+    svd_result <- svd(SVD_matrix)
+    U_new <- svd_result$u %*% t(svd_result$v)
 
-    return(TRUE)
-  }
-  #-------------------------------------
-  # M(U) = \sum_{t}{X_t U U^T X_t}
-  #-------------------------------------
-  Compute_M_U = function(Cov.list, U){
-    Reduce("+", lapply(Cov.list, function(X_t){ X_t %*% U %*% t(U) %*% X_t }))
-  }
-  #-------------------------------------
-  # f(U) = Tr(U^T M(U) U)
-  #-------------------------------------
-  Compute_f_U = function(Cov.list, U){
-    (t(U) %*% Compute_M_U(Cov.list, U) %*% U) %>% diag %>% sum
-  }
+    # Compute Y^{k+1}_t
+    Ys_new <- lapply(Xs, function(X) t(U_new) %*% X %*% U_new)
 
+    # Check for convergence using the objective function f(U)
+    f_U_new <- sum(sapply(Ys_new, function(Y) sum(diag(Y))^2))
+    f_U <- sum(sapply(Ys, function(Y) sum(diag(Y))^2))
 
-
-
-
-
-
-  #=============================================================================
-  # Define U_0 from data
-  #=============================================================================
-  # random U_0
-  # U = U_0 <- qr.Q(qr(matrix(rnorm(n * r), n, r)))
-
-  # Sum the squares of the covariance matrices
-  M <- Reduce("+", lapply(Cov.list, function(X) { X %*% X }))
-  M <- (M + t(M)) / 2 # sym
-
-  # Perform Eigenvalue Decomposition on the summed matrix
-  eigen_decomp <- eigen(M, symmetric = TRUE)
-
-  # Decide r by explained_var_prop
-  cum_var <- cumsum(eigen_decomp$values) / sum(eigen_decomp$values)
-  r <- which(cum_var >= explained_var_prop)[1]
-
-  # Initialize U_0
-  U_k = U_0 <- eigen_decomp$vectors[, 1:r, drop = F]
-  # diag(t(U_0) %*% U_0) %>% sum == r
-
-
-  # initialize f_k
-  f_k = f_0 = Compute_f_U(Cov.list, U_k)
-
-
-
-  #=============================================================================
-  # Repeat the algorithm
-  #=============================================================================
-  repeat{
-    tictoc::tic()
-    #---------------------------------------------------------------------------
-    # 1) Perform the EVD on $M(U_k) = \sum_t{X_t U_k U^T_k X_t}$
-    #---------------------------------------------------------------------------
-    # Compute M(U_k)
-    M_U_k <- Compute_M_U(Cov.list, U_k)
-
-    # is symmetric?
-    if(!isSymmetric(M_U_k)){
-      stop("The M(U_k) matrix is not symmetric")
+    if (abs(f_U_new - f_U) / f_U < epsilon) {
+      break  # Convergence achieved
     }
 
-    # EVD
-    evd_U_k <- eigen(M_U_k, symmetric = TRUE)
+    # Update U and Ys for the next iteration
+    U <- U_new
+    Ys <- Ys_new
+  }
 
-
-
-
-
-
-    #---------------------------------------------------------------------------
-    # 2) Choose the leading $r$ eigenvectors $U_{k+1}$
-    #---------------------------------------------------------------------------
-    # Decide r by explained_var_prop
-    cum_var <- cumsum(evd_U_k$values) / sum(evd_U_k$values)
-    r <- which(cum_var >= explained_var_prop)[1]
-
-    # Update U_k -> U_{k+1}
-    U_k <- evd_U_k$vectors[, 1:r, drop = F]
-
-    # Check if the matrix is identical : orthogonality of eigenvectors
-    if(!is.nearly.identity(t(U_k) %*% U_k)){
-      stop("The t(U_k) %*% U_k) is not an identity matrix.")
-    }
-
-
-
-
-
-
-    #---------------------------------------------------------------------------
-    # 3) Compute $Y_t = U^{T}_{k+1} X_t U_{k+1}$
-    #---------------------------------------------------------------------------
-    # Compute Y_t for each t
-    Y_t.list <- lapply(Cov.list, function(X_t) {
-      t(U_k) %*% X_t %*% U_k
-    })
-
-
-
-
-
-
-    #---------------------------------------------------------------------------
-    # 4) until {f(U_k+1) - f(U_k)}/{f(U_k)} =< e
-    #---------------------------------------------------------------------------
-    # Maximum problem : Compute the objective function value for convergence check
-    f_kp1 = Compute_f_U(Cov.list, U_k)
-    tictoc::toc()
-
-
-    # Check for convergence
-    difference = abs(f_kp1 - f_k) / f_k
-    cat("\n", crayon::green("The difference was "), crayon::red(difference),"\n")
-
-    if(difference <= epsilon){
-
-      break
-
-    }else{
-      # Update for the next iteration
-      f_k = f_kp1
-      f_kp1 = NULL
-    }
-  }# repeat
-
-
-
-
-  #=============================================================================
-  # Return results
-  #=============================================================================
-  list(Y_t = Y_t.list, U_k = U_k) %>% return()
+  return(list(U = U, Ys = Ys))
 }
 
-
-
-
-
-
+# Example usage:
+# Assuming Xs is your list of covariance matrices and r is the target rank
+# Replace the following with your actual data
+# Xs = list(matrix(rnorm(100), 10, 10), matrix(rnorm(100), 10, 10), ...)
+# r = 2
+# result <- algorithm_2(Xs, r)
