@@ -1,6 +1,4 @@
-DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list,
-                                                 explained_var_prop = 0.9,
-                                                 epsilon = 1e-6) {
+DimMat___Sym___Cov___CCA___Algorithm1 = function(Cov.list, explained_var_prop = 0.9, epsilon = 1e-6) {
   #=============================================================================
   # Define functions for the algorithm
   #=============================================================================
