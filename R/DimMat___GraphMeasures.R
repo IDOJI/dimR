@@ -25,7 +25,7 @@ DimMat___GraphMeasures = function(Matrix, threshold = 0.5, path_Export=NULL, vis
   #=============================================================================
   # Convert the correlation matrix to a graph
   graph <- graph_from_adjacency_matrix(Matrix, mode = "undirected", weighted = TRUE, diag = FALSE)
-
+  E(graph)$weight <- abs(E(graph)$weight)
 
 
 
@@ -34,6 +34,7 @@ DimMat___GraphMeasures = function(Matrix, threshold = 0.5, path_Export=NULL, vis
   #=============================================================================
   # Compute graph-measures
   #=============================================================================
+  tictoc::tic()
   # a list for saving
   Results.list = list()
 
@@ -49,27 +50,28 @@ DimMat___GraphMeasures = function(Matrix, threshold = 0.5, path_Export=NULL, vis
   # Clustering Coefficient
   Results.list$clustering_coeff = clustering_coeff <- transitivity(graph, type = "average")
 
-  # Global Efficiency
-  Results.list$global_efficiency = global_efficiency <- igraph::global_efficiency(graph, weights = E(graph)$weight)
+  # Calculate global efficiency with the absolute weights (for negative correlation)
+  Results.list$global_efficiency = global_efficiency = igraph::global_efficiency(graph, weights = abs(E(graph)$weight))
 
   # Local Efficiency
-  Results.list$local_efficiency = local_efficiency <- igraph::local_efficiency(graph)
+  Results.list$local_efficiency = local_efficiency <- igraph::local_efficiency(graph, weights = abs(E(graph)$weight))
 
   # Betweenness Centrality
-  Results.list$betweenness = betweenness <- betweenness(graph, normalized = TRUE)
+  Results.list$betweenness = betweenness <- betweenness(graph, normalized = TRUE, weights = abs(E(graph)$weight))
 
   # Modularity
-  communities <- cluster_fast_greedy(graph)
+  communities <- cluster_fast_greedy(graph, weights = abs(E(graph)$weight))
   Results.list$modularity <- modularity(communities)
-  print(paste("Modularity:", modularity))
+
 
   # Characteristic Path Length
-  Results.list$path_length = path_length <- mean_distance(graph, directed = FALSE)
+  Results.list$path_length = path_length <- mean_distance(graph, directed = FALSE, weights = abs(E(graph)$weight))
 
 
   # Small-Worldness
   Results.list$small_worldness = small_worldness = (clustering_coeff / global_efficiency) / (path_length / global_efficiency)
-
+  tictoc::toc()
+  cat("\n", crayon::green("All the graph measures have been calculated!") ,"\n")
 
 
 
@@ -106,36 +108,36 @@ DimMat___GraphMeasures = function(Matrix, threshold = 0.5, path_Export=NULL, vis
   #=============================================================================
   # Visualize
   #=============================================================================
-  if(visulaize){
-    # Install and load ggraph if you haven't already
-    if (!requireNamespace("ggraph", quietly = TRUE)) {
-      install.packages("ggraph")
-    }
-    library(ggraph)
-
-
-    # Using ggraph to plot
-    p =ggraph(graph, layout = "fr") +
-      geom_edge_link(aes(edge_alpha = weight), color = "grey") +  # Edges with transparency based on weight
-      geom_node_point(color = "blue", size = 3) +                # Nodes as points
-      theme_void()                                                # Minimal theme
-
-
-
-    # file name
-    if(!is.null(file.name)){
-      file.name = "Graph"
-    }
-
-
-    # Save image
-    if(!is.null(path_Export)){
-      # Now use ggsave to save the plot to a file
-      ggsave(paste0(path_Export, "/", file.name, ".png"), p)
-    }
-    # If you want to save as a PDF or other format, just change the extension
-    # ggsave("my_network_plot.pdf", plot, width = 10, height = 8, units = "in")
-  }
+  # if(visulaize){
+  #   # Install and load ggraph if you haven't already
+  #   if (!requireNamespace("ggraph", quietly = TRUE)) {
+  #     install.packages("ggraph")
+  #   }
+  #   library(ggraph)
+  #
+  #
+  #   # Using ggraph to plot
+  #   p =ggraph(graph, layout = "fr") +
+  #     geom_edge_link(aes(edge_alpha = weight), color = "grey") +  # Edges with transparency based on weight
+  #     geom_node_point(color = "blue", size = 3) +                # Nodes as points
+  #     theme_void()                                                # Minimal theme
+  #
+  #
+  #
+  #   # file name
+  #   if(!is.null(file.name)){
+  #     file.name = "Graph"
+  #   }
+  #
+  #
+  #   # Save image
+  #   if(!is.null(path_Export)){
+  #     # Now use ggsave to save the plot to a file
+  #     ggsave(paste0(path_Export, "/", file.name, ".png"), p)
+  #   }
+  #   # If you want to save as a PDF or other format, just change the extension
+  #   # ggsave("my_network_plot.pdf", plot, width = 10, height = 8, units = "in")
+  # }
 
 
 
